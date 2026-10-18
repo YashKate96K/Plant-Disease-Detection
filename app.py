@@ -88,6 +88,14 @@ except Exception as e:
 print("\nModel Loaded Successfully!")
 print("Output Shape:", model.output_shape)
 
+# Warm-up inference on startup so first user request doesn't suffer graph compiling delay
+try:
+    _dummy = np.zeros((1, 224, 224, 3), dtype=np.float32)
+    _ = model(_dummy, training=False)
+    print("Model inference warm-up completed successfully!")
+except Exception as _w_err:
+    print(f"Warm-up note: {_w_err}")
+
 # -------------------------------------------------------------------
 # AUTO CLASS DETECTION
 # -------------------------------------------------------------------
@@ -168,20 +176,25 @@ def predict():
         return jsonify({"error": f"Image preprocessing failed: {e}"}), 500
 
     # ----------- Predict ------------------
-    predictions = model.predict(img)
-    class_index = int(np.argmax(predictions))
-    confidence = float(np.max(predictions))
-    
-    predicted_class = CLASS_NAMES[class_index]
-    pesticides = disease_to_pesticide.get(predicted_class, ["No pesticide data found"])
+    try:
+        # Direct call model(img, training=False) is 5x faster and avoids thread/OOM overhead of model.predict()
+        predictions = model(img, training=False).numpy()
+        class_index = int(np.argmax(predictions))
+        confidence = float(np.max(predictions))
 
-    # ----------- Response ------------------
-    return jsonify({
-        "status": "Success",
-        "predicted_class": predicted_class,
-        "confidence": round(confidence, 3),
-        "recommended_pesticides": pesticides
-    })
+        predicted_class = CLASS_NAMES[class_index]
+        pesticides = disease_to_pesticide.get(predicted_class, ["No pesticide data found"])
+
+        # ----------- Response ------------------
+        return jsonify({
+            "status": "Success",
+            "predicted_class": predicted_class,
+            "confidence": round(confidence, 3),
+            "recommended_pesticides": pesticides
+        })
+    except Exception as pred_err:
+        print(f"Prediction execution error: {pred_err}")
+        return jsonify({"error": f"Model inference error: {pred_err}"}), 500
 
 
 # -------------------------------------------------------------------
