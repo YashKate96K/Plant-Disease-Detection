@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FloraScan AI — Intelligent Plant Disease Diagnosis</title>
+  <meta name="description" content="Instant AI-powered plant leaf disease detection and treatment recommendations powered by EfficientNetB3 and 38 agricultural classes.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <!-- Ambient Botanical Background Glows -->
+  <div class="ambient-glow glow-top" aria-hidden="true"></div>
+  <div class="ambient-glow glow-bottom" aria-hidden="true"></div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand-container">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="leaf-svg">
+            <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/>
+            <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
+          </svg>
+        </div>
+        <div>
+          <div class="brand-title-wrap">
+            <h1 class="brand-title">FloraScan<span class="gradient-text">AI</span></h1>
+            <span class="version-tag">v2.0</span>
+          </div>
+          <p class="brand-subtitle">Deep Learning Botanical Disease Diagnostics & Treatment</p>
+        </div>
+      </div>
+
+      <div class="header-status-panel">
+        <div class="status-indicator">
+          <span class="status-dot"></span>
+          <span class="status-text">Model Online</span>
+        </div>
+        <div class="meta-pill">
+          <span class="meta-label">Architecture</span>
+          <span class="meta-val">EfficientNetB3</span>
+        </div>
+        <div class="meta-pill">
+          <span class="meta-label">Accuracy</span>
+          <span class="meta-val highlight-val">97.7%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs" aria-label="Main Navigation">
+      <button class="nav-tab active" id="tabBtnStudio" data-target="tabStudio">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m10 15 5-3-5-3v6Z"/></svg>
+        Diagnostic Studio
+      </button>
+      <button class="nav-tab" id="tabBtnDirectory" data-target="tabDirectory">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10M6 10h10M6 14h6"/></svg>
+        Disease Directory (38)
+      </button>
+      <button class="nav-tab" id="tabBtnDocs" data-target="tabDocs">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        API & ESP32-CAM Docs
+      </button>
+    </nav>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-content">
+    
+    <!-- TAB 1: DIAGNOSTIC STUDIO -->
+    <section id="tabStudio" class="tab-pane active" aria-labelledby="tabBtnStudio">
+      <div class="studio-grid">
+        
+        <!-- Left: Upload & Input Column -->
+        <div class="studio-card upload-column">
+          <div class="card-header">
+            <h2 class="card-title">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Upload Plant Leaf Image
+            </h2>
+            <span class="card-tag">Supports JPG, PNG, WEBP</span>
+          </div>
+
+          <!-- Dropzone Area -->
+          <div id="dropZone" class="drop-zone" tabindex="0" role="region" aria-label="Leaf image drop zone">
+            <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp" class="visually-hidden">
+            <input type="file" id="cameraInput" accept="image/*" capture="environment" class="visually-hidden">
+
+            <div class="drop-zone-content">
+              <div class="upload-icon-circle">
+                <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/>
+                  <path d="M12 12v9"/>
+                  <path d="m16 16-4-4-4 4"/>
+                </svg>
+              </div>
+              <h3 class="drop-headline">Drag and drop your plant leaf photo</h3>
+              <p class="drop-subtext">or choose an upload method below</p>
+
+              <div class="drop-actions">
+                <button type="button" class="btn btn-primary" id="btnBrowse">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  Browse Image
+                </button>
+                <button type="button" class="btn btn-secondary" id="btnCamera">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+                  Camera Capture
+                </button>
+              </div>
+
+              <div class="clipboard-tip">
+                <kbd>Ctrl</kbd> + <kbd>V</kbd> anywhere on screen to paste screenshot directly
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Test Samples Strip -->
+          <div class="samples-wrapper">
+            <div class="samples-header">
+              <span class="samples-title">⚡ Instant Test Samples</span>
+              <span class="samples-hint">Click a sample to test the AI immediately:</span>
+            </div>
+            <div class="sample-cards">
+              <button type="button" class="sample-card" id="btnSampleTomato">
+                <img src="{{ url_for('static', filename='samples/tomato_blight.jpg') }}" alt="Tomato with Late Blight" class="sample-thumb" loading="lazy">
+                <div class="sample-info">
+                  <span class="sample-name">Tomato Late Blight</span>
+                  <span class="sample-state infected">Diseased Leaf</span>
+                </div>
+              </button>
+              <button type="button" class="sample-card" id="btnSampleApple">
+                <img src="{{ url_for('static', filename='samples/healthy_apple.jpg') }}" alt="Healthy Apple Leaf" class="sample-thumb" loading="lazy">
+                <div class="sample-info">
+                  <span class="sample-name">Healthy Apple</span>
+                  <span class="sample-state healthy">Clean Leaf</span>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Preview, Scanner & Diagnostic Results Column -->
+        <div class="studio-card preview-column">
+          <div class="card-header">
+            <h2 class="card-title">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+              Analysis & Diagnosis
+            </h2>
+            <span id="scanStatusBadge" class="card-tag">Awaiting Image</span>
+          </div>
+
+          <!-- Empty State (Shown before image selected) -->
+          <div id="previewEmptyState" class="empty-preview-state">
+            <div class="empty-icon-wrap">
+              <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+                <circle cx="9" cy="9" r="2"/>
+                <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+              </svg>
+            </div>
+            <h3>No Leaf Selected</h3>
+            <p>Upload or select a leaf to view diagnosis</p>
+          </div>
+
+          <!-- Active Preview & Laser Scanner (Shown once image is loaded) -->
+          <div id="previewActiveState" class="active-preview-state hidden">
+            <div class="preview-stage">
+              <img id="leafPreviewImg" src="" alt="Selected leaf preview" class="preview-img">
+              
+              <!-- Analysis Loading State Overlay -->
+              <div id="laserScanner" class="laser-scanner hidden" aria-hidden="true">
+                <div class="analysis-spinner-box">
+                  <div class="analysis-spinner"></div>
+                  <span class="analysis-text">Analyzing leaf sample...</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Preview Control Bar -->
+            <div class="preview-meta-bar">
+              <div class="meta-file-info">
+                <span id="previewFileName" class="file-name">leaf_sample.jpg</span>
+                <span id="previewFileSize" class="file-size">1.2 MB</span>
+              </div>
+              <div class="preview-actions">
+                <button type="button" class="btn btn-ghost" id="btnClearImage">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  Remove
+                </button>
+                <button type="button" class="btn btn-primary" id="btnDiagnose">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+                  Analyze Health
+                </button>
+              </div>
+            </div>
+
+            <!-- Results Card (Rendered upon successful API response) -->
+            <div id="resultsCard" class="results-card hidden">
+              <div class="results-top-bar">
+                <div class="results-condition-wrap">
+                  <span id="resultHealthBadge" class="health-badge healthy">HEALTHY</span>
+                  <h3 id="resultCropName" class="crop-title">Tomato</h3>
+                  <div id="resultDiseaseName" class="disease-title">Late Blight</div>
+                </div>
+
+                <!-- Confidence Gauge -->
+                <div class="confidence-box">
+                  <div class="confidence-circle" id="confidenceCircle">
+                    <svg viewBox="0 0 36 36" class="circular-chart">
+                      <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                      <path id="circleProgress" class="circle-val" stroke-dasharray="98, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                    </svg>
+                    <div class="circle-inner-text">
+                      <span id="confidencePct" class="pct-num">98.5%</span>
+                      <span class="pct-label">Confidence</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Prescribed Treatments Section -->
+              <div class="treatment-section">
+                <h4 class="treatment-heading">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  Prescribed Treatment & Recommendations
+                </h4>
+                <div id="pesticidePills" class="pesticide-pills-list">
+                  <!-- Dynamically populated tags -->
+                </div>
+                <div id="treatmentAdviceNote" class="treatment-advice-note">
+                  <!-- Informative note -->
+                </div>
+              </div>
+
+              <!-- Quick Action Row -->
+              <div class="results-action-row">
+                <button type="button" class="btn btn-secondary" id="btnCopyReport">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                  Copy Diagnosis Report
+                </button>
+                <button type="button" class="btn btn-ghost" id="btnResetScan">
+                  Scan Another Leaf
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Scans Local History Drawer -->
+      <div class="history-section">
+        <div class="history-header">
+          <div class="history-title-wrap">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <h3 class="history-title">Recent Scans Session</h3>
+          </div>
+          <button type="button" class="btn-text" id="btnClearHistory">Clear History</button>
+        </div>
+        <div id="historyList" class="history-list">
+          <p class="history-empty">Your diagnosed leaf history in this session will appear here.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: 38-DISEASE ENCYCLOPEDIA -->
+    <section id="tabDirectory" class="tab-pane hidden" aria-labelledby="tabBtnDirectory">
+      <div class="directory-card">
+        <div class="directory-header">
+          <div>
+            <h2 class="card-title">Botanical Disease & Treatment Encyclopedia</h2>
+            <p class="card-desc">All 38 recognized crop disease profiles with recommended treatment chemicals.</p>
+          </div>
+          <div class="search-wrap">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" class="search-icon"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="text" id="directorySearchInput" placeholder="Search crop or disease (e.g. Tomato, Blight, Apple)..." class="search-input">
+          </div>
+        </div>
+
+        <!-- Filter Chips -->
+        <div class="filter-chips" id="cropFilterChips">
+          <button class="chip active" data-crop="all">All Crops</button>
+          <button class="chip" data-crop="Apple">Apple</button>
+          <button class="chip" data-crop="Corn">Corn</button>
+          <button class="chip" data-crop="Grape">Grape</button>
+          <button class="chip" data-crop="Potato">Potato</button>
+          <button class="chip" data-crop="Tomato">Tomato</button>
+          <button class="chip" data-crop="Pepper">Pepper</button>
+          <button class="chip" data-crop="Strawberry">Strawberry</button>
+        </div>
+
+        <div id="directoryGrid" class="directory-grid">
+          <!-- Populated dynamically via /api/classes -->
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: API & ESP32-CAM INTEGRATION -->
+    <section id="tabDocs" class="tab-pane hidden" aria-labelledby="tabBtnDocs">
+      <div class="docs-grid">
+        <div class="doc-card">
+          <div class="card-header">
+            <h2 class="card-title">📡 REST API Specification</h2>
+            <span class="card-tag">POST /predict</span>
+          </div>
+          <p class="doc-desc">Send image as either <code>multipart/form-data</code> with field <code>image</code> or raw JPEG binary stream with <code>Content-Type: image/jpeg</code>.</p>
+          
+          <div class="code-header">
+            <span>cURL Command (Multipart Form)</span>
+            <button class="copy-code-btn" data-copy="curl -X POST -F &quot;image=@leaf.jpg&quot; http://127.0.0.1:5000/predict">Copy</button>
+          </div>
+          <pre class="code-block"><code>curl -X POST -F "image=@leaf.jpg" http://127.0.0.1:5000/predict</code></pre>
+
+          <div class="code-header">
+            <span>Python requests Example</span>
+            <button class="copy-code-btn" data-copy="import requests&#10;&#10;url = 'http://127.0.0.1:5000/predict'&#10;with open('leaf.jpg', 'rb') as f:&#10;    res = requests.post(url, files={'image': f})&#10;print(res.json())">Copy</button>
+          </div>
+          <pre class="code-block"><code>import requests
+
+url = 'http://127.0.0.1:5000/predict'
+with open('leaf.jpg', 'rb') as f:
+    res = requests.post(url, files={'image': f})
+print(res.json())</code></pre>
+        </div>
+
+        <div class="doc-card">
+          <div class="card-header">
+            <h2 class="card-title">📷 ESP32-CAM Microcontroller Setup</h2>
+            <span class="card-tag">Raw JPEG Stream</span>
+          </div>
+          <p class="doc-desc">Connect an ESP32-CAM to your Wi-Fi and stream camera captures directly to this API on your local network.</p>
+
+          <div class="code-header">
+            <span>Arduino / ESP32 C++ Snippet</span>
+            <button class="copy-code-btn" data-copy="#include &lt;WiFi.h&gt;&#10;#include &lt;HTTPClient.h&gt;&#10;#include &quot;esp_camera.h&quot;&#10;&#10;void sendLeafCapture() {&#10;    camera_fb_t * fb = esp_camera_fb_get();&#10;    if (!fb) return;&#10;&#10;    HTTPClient http;&#10;    http.begin(&quot;http://192.168.1.100:5000/predict&quot;);&#10;    http.addHeader(&quot;Content-Type&quot;, &quot;image/jpeg&quot;);&#10;&#10;    int httpCode = http.POST(fb-&gt;buf, fb-&gt;len);&#10;    String response = http.getString();&#10;    Serial.println(response);&#10;&#10;    http.end();&#10;    esp_camera_fb_return(fb);&#10;}">Copy</button>
+          </div>
+          <pre class="code-block"><code>#include &lt;WiFi.h&gt;
+#include &lt;HTTPClient.h&gt;
+#include "esp_camera.h"
+
+void sendLeafCapture() {
+    camera_fb_t * fb = esp_camera_fb_get();
+    if (!fb) return;
+
+    HTTPClient http;
+    // Replace with your computer's local IP address
+    http.begin("http://192.168.1.100:5000/predict");
+    http.addHeader("Content-Type", "image/jpeg");
+
+    int httpCode = http.POST(fb-&gt;buf, fb-&gt;len);
+    String response = http.getString();
+    Serial.println(response);
+
+    http.end();
+    esp_camera_fb_return(fb);
+}</code></pre>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <div class="footer-inner">
+      <span>🌿 <strong>FloraScan AI</strong> &bull; EfficientNetB3 Plant Disease Diagnosis System</span>
+      <span class="footer-meta">Dataset: PlantVillage &bull; Input Shape: 224&times;224 RGB &bull; Port: 5000</span>
+    </div>
+  </footer>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

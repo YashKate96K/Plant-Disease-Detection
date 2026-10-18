@@ -1,6 +1,10 @@
-from flask import Flask, request, jsonify
-from tensorflow.keras.models import load_model
-from tensorflow.keras.layers import DepthwiseConv2D
+# pyrefly: ignore [missing-import]
+from flask import Flask, request, jsonify, render_template
+# pyrefly: ignore [missing-import]
+from keras.models import load_model
+# pyrefly: ignore [missing-import]
+from keras.layers import DepthwiseConv2D
+# pyrefly: ignore [missing-import]
 import numpy as np
 import tensorflow as tf
 import os
@@ -13,8 +17,15 @@ app = Flask(__name__)
 CORS(app)  # <-- enable CORS for all routes
 
 
+import sys
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
+# pyrefly: ignore [missing-import]
+from keras.layers import BatchNormalization
+
 # -------------------------------------------------------------------
-# FIX DepthwiseConv2D (Needed for EfficientNetB3 compatibility)
+# FIX DepthwiseConv2D & BatchNormalization (Compatibility Fix)
 # -------------------------------------------------------------------
 
 class FixedDepthwiseConv2D(DepthwiseConv2D):
@@ -25,24 +36,56 @@ class FixedDepthwiseConv2D(DepthwiseConv2D):
         super().__init__(*args, **kwargs)
 
 
+class FixedBatchNormalization(BatchNormalization):
+    """Custom class to handle input shape nesting in Keras 3."""
+    def build(self, input_shape):
+        if isinstance(input_shape, list) and len(input_shape) == 1:
+            input_shape = input_shape[0]
+        super().build(input_shape)
+
+    def call(self, inputs, *args, **kwargs):
+        if isinstance(inputs, list) and len(inputs) == 1:
+            inputs = inputs[0]
+        return super().call(inputs, *args, **kwargs)
+
+    def compute_output_shape(self, input_shape):
+        if isinstance(input_shape, list) and len(input_shape) == 1:
+            input_shape = input_shape[0]
+        return super().compute_output_shape(input_shape)
 
 
 # -------------------------------------------------------------------
-# LOAD MODEL
+# LOAD MODEL (With auto-download from Google Drive for Cloud Deployment)
 # -------------------------------------------------------------------
 
-MODEL_PATH = "model/efficientnetb3-Plant Village Disease-97.72.h5"
+import gdown
 
-custom_objects = {"DepthwiseConv2D": FixedDepthwiseConv2D}
+MODEL_DIR = "model"
+MODEL_PATH = os.path.join(MODEL_DIR, "efficientnetb3-Plant Village Disease-97.72.h5")
+GDRIVE_FILE_ID = "19bhoG4Sy2fZiOG65IQ_KK2YBmBlv4fHa"
+
+if not os.path.exists(MODEL_PATH):
+    os.makedirs(MODEL_DIR, exist_ok=True)
+    print("Model file not found locally. Downloading from Google Drive...")
+    try:
+        gdown.download(id=GDRIVE_FILE_ID, output=MODEL_PATH, quiet=False)
+        print("Model downloaded successfully!")
+    except Exception as e:
+        print(f"Error downloading model: {e}")
+
+custom_objects = {
+    "DepthwiseConv2D": FixedDepthwiseConv2D,
+    "BatchNormalization": FixedBatchNormalization,
+}
 
 try:
-    model = load_model(MODEL_PATH, custom_objects=custom_objects)
+    model = load_model(MODEL_PATH, custom_objects=custom_objects, compile=False)
 except Exception as e:
-    print("⚠ Error loading model:", e)
-    print("Trying compile=False...")
+    print(f"Error loading model with standard load_model: {e}")
+    print("Trying tf.keras.models.load_model...")
     model = tf.keras.models.load_model(MODEL_PATH, custom_objects=custom_objects, compile=False)
 
-print("\n✅ Model Loaded Successfully!")
+print("\nModel Loaded Successfully!")
 print("Output Shape:", model.output_shape)
 
 # -------------------------------------------------------------------
@@ -66,7 +109,32 @@ CLASS_NAMES = all_classes
 
 @app.route("/", methods=["GET"])
 def home():
-    return "🌿 Plant Disease Detection API is Running!"
+    if request.headers.get("Accept") == "application/json" or request.args.get("format") == "json":
+        return jsonify({
+            "status": "online",
+            "message": "🌿 Plant Disease Detection API is Running!",
+            "model_shape": str(model.output_shape),
+            "classes_count": len(CLASS_NAMES)
+        })
+    return render_template("index.html")
+
+
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({
+        "status": "healthy",
+        "model_loaded": True,
+        "classes_count": len(CLASS_NAMES),
+        "input_resolution": "224x224"
+    })
+
+
+@app.route("/api/classes", methods=["GET"])
+def get_classes():
+    return jsonify({
+        "classes": CLASS_NAMES,
+        "pesticides_map": disease_to_pesticide
+    })
 
 
 @app.route("/predict", methods=["POST"])
@@ -78,7 +146,7 @@ def predict():
     # Accept ANY image/jpeg with parameters
     if request.content_type and request.content_type.startswith("image/jpeg"):
         image_bytes = request.data
-+
+
     elif "image" in request.files:
         # Case 2: Browser / Postman uses multipart field 'image'
         image_bytes = request.files["image"].read()
@@ -123,4 +191,5 @@ def predict():
 if __name__ == "__main__":
     print("🚀 Server running at: http://0.0.0.0:5000")
     # Setting host="0.0.0.0" makes the server accessible from your ESP32-CAM on the local network.
-    app.run(host="0.0.0.0", port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
