@@ -1,5 +1,5 @@
 Flask==2.2.5
-tensorflow-cpu==2.11.0
+tensorflow==2.11.0
 keras==2.11.0
 numpy==1.23.5
 Pillow==9.5.0
@@ -7,3 +7,4 @@ flask-cors
 opencv-python-headless
 gunicorn
 gdown
+
